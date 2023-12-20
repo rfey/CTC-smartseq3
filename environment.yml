@@ -1,0 +1,11 @@
+name: CTCsmartseq3
+channels: 
+  - bioconda
+  - conda-forge
+dependencies:
+  - samtools>=1.5
+  - star=2.7.3a
+  - pigz>=2.3
+  - conda-forge::r-seurat
+  - r-tidyverse
+  - r-patchwork

@@ -1,0 +1,5 @@
+cran_pcks <- c("inflection","yaml","shiny","shinythemes","shinyBS","ggplot2","mclust","dplyr","cowplot","Matrix","BiocManager","devtools","stringdist","data.table","stringr","extraDistr")
+install.packages(cran_pcks)
+bioc_pcks <- c("GenomicRanges","GenomicFeatures","GenomicAlignments","AnnotationDbi","GenomeInfoDb","plyranges")
+BiocManager::install(bioc_pcks)
+devtools::install_github('VPetukhov/ggrastr')
