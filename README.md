@@ -14,6 +14,10 @@ environment_exported.yml
 installRdependencies.txt
 - R packages installed on the R terminal
 
+zUMIs_CTCsmartseq3.yaml  
+- yaml file used to run zUMIs
+- used the form: zUMIs -y zUMIs_CTCsmartseq3.yaml -d /path/to/zUMIs/scripts -c
+
 processCTC.R
 - script used for analysis of scRNA-seq data
 
