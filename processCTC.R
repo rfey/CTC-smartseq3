@@ -1,4 +1,4 @@
-# rmf 6.13.2023, last modified 12.20.2023
+# rmf 6.13.2023, last modified 12.12.2024
 
 # script assumes the following directories exist:
 # plots/
@@ -154,6 +154,34 @@ plot_grid(myplot, legend, nrow = 2, rel_heights = c(1, .1))
 ggsave("plots/violin_QC_cellLines.png")
 ggsave("plots/violin_QC_cellLines.pdf")
 
+# plot melanoma only
+plist <- list()
+i <- 1
+for (feature in features_to_plot){
+  p <- VlnPlot(obj_melanoma, features = features_to_plot[[i]], pt.size = 2) +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank()) +
+    guides(fill=guide_legend(title="Tissue    ")) +
+    ggtitle(plot_titles[[i]]) +
+    theme(plot.title = element_text(size = 12))
+  plist[[i]] <- p
+  i <- i + 1
+}
+
+# now go through and hide the legend for each plot
+plist_nolegend <- list()
+i <- 1
+for (p in plist){
+  p_nolegend <- p + theme(legend.position="none")
+  plist_nolegend[[i]] <- p_nolegend
+  i <- i+1
+}
+myplot <- plot_grid(plotlist = plist_nolegend, ncol = 3)
+myplot
+ggsave("plots/violin_QC_melanoma.png")
+ggsave("plots/violin_QC_melanoma.pdf")
+
 #############################
 ### now plot individually ###
 #############################
@@ -195,6 +223,16 @@ max(obj_prostate$percent_mito)
 obj_melanoma <- NormalizeData(obj_melanoma)
 obj_prostate <- NormalizeData(obj_prostate)
 
+# melanoma only
+obj_melanoma <- FindVariableFeatures(obj_melanoma)
+obj_melanoma <- ScaleData(obj_melanoma)
+obj_melanoma <- RunPCA(obj_melanoma, npcs = 10)
+obj_melanoma <- RunUMAP(obj_melanoma, dims = 1:5, n.neighbors=9L)
+obj_melanoma <- FindNeighbors(obj_melanoma, dims = 1:5)
+obj_melanoma <- FindClusters(obj_melanoma, res = 0.5)
+#saveRDS(obj_melanoma, file = "obj_analyzed_melanoma.RDS")
+
+# merged
 obj_merged <- merge(obj_melanoma, y = obj_prostate, merge.data = TRUE)
 #saveRDS(obj_merged, file = "obj_merged.RDS")
 
@@ -232,33 +270,25 @@ ggsave("plots/dimplot_UMAP_byDataset.pdf")
 # use the following line to get the ID with decimal in this dataset:
 # row.names(combined_obj@assays$RNA@counts)[grep("ENSG00000064300", row.names(combined_obj@assays$RNA@counts))]
 # add to the markers list, add gene name to labels list
-markers <- c("ENSG00000119888.11","ENSG00000064300.9","ENSG00000167653.5","ENSG00000086205.18","ENSG00000261857.7",
-             "ENSG00000173546.7","ENSG00000076706.17","ENSG00000120217.14","ENSG00000120215.10")
-labels <- c("EPCAM","NGFR","PSCA","FOLH1","MIA",
-            "MCSP","MCAM","PD-L1","MART-1")
 
-# plot as individual feature plots
-for (i in 1:length(markers)){
-  FeaturePlot(combined_obj, feature = markers[i]) +
-    ggtitle(labels[i])
-  savename <- paste("plots/featurePlot_",labels[i], sep = "")
-  ggsave(paste(savename,".png",sep=""))
-  ggsave(paste(savename,".pdf",sep=""))
-}
+# MIA, MCSP (aka CSPG4), MCAM, MART-1 (aka MLANA), and PTPRC
+# plus: PRAME, c-kit (not in the dataset), and PD-L1 (aka CD274-- not expressed)
+labels <- c("MIA","MCSP","MCAM",
+            "MART1","PTPRC","PRAME")
+markers <- c("ENSG00000261857.7","ENSG00000173546.7","ENSG00000076706.17",
+             "ENSG00000120215.10","ENSG00000081237.20", "ENSG00000185686.18")
 
-
-# plot all together as violin plot
+# label source code: https://github.com/wilkelab/cowplot/blob/master/vignettes/shared_legends.Rmd
+# violin plot, first with legend so we can extract later
 plist <- list()
 i <- 1
 for (m in markers){
-  p <- VlnPlot(combined_obj, assay = "RNA", group.by = "dataset", features = markers[[i]]) +
+  p <- VlnPlot(obj_melanoma, assay = "RNA", features = markers[[i]], pt.size = 2) +
     ggtitle(labels[[i]]) + 
     theme(axis.title.x=element_blank(),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           axis.title.y=element_text(size = 12)) +
-    guides(fill=guide_legend(title="Tissue    ")) +
-    scale_fill_discrete(labels=c('Melanoma    ', 'Prostate')) +
     theme(legend.box = "horizontal", legend.direction = "horizontal") 
   plist[[i]] <- p
   i <- i+1
@@ -273,16 +303,6 @@ for (p in plist){
   i <- i+1
 }
 myplot <- plot_grid(plotlist = plist_nolegend)
-
-# extract legend from first plot list (horizontal)
-legend <- get_legend(
-  plist[[1]] + 
-    guides(color = guide_legend(ncol = 2)) +
-    theme(legend.box.margin = margin(0, 0, 18, 32))
-)
-
-# add the legend underneath the row we made earlier
-# give it 10% of the height of one plot (via rel_heights)
-plot_grid(myplot, legend, ncol = 1, rel_heights = c(1, .1))
-ggsave("plots/violin_markerGenes_merged.png", width = 8, height = 6, bg = "white")
-ggsave("plots/violin_markerGenes_merged.pdf", width = 8, height = 6)
+myplot
+ggsave("plots/violin_markergenes_melanoma.pdf")
+ggsave("plots/violin_markergenes_melanoma.png")
